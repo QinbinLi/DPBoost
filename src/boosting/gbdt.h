@@ -23,6 +23,12 @@
 #include <LightGBM/json11.hpp>
 #include "score_updater.hpp"
 
+
+static bool abs_compare(float a, float b)
+{
+    return (std::fabs(a) < std::fabs(b));
+}
+
 using namespace json11;
 
 namespace LightGBM {
@@ -41,7 +47,7 @@ class GBDT : public GBDTBase {
   * \brief Destructor
   */
   ~GBDT();
-
+  Laplace lap;
   /*!
   * \brief Initialization logic
   * \param gbdt_config Config for boosting

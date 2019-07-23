@@ -7,6 +7,7 @@
 
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/random_generator.h>
 
 #include <string>
 #include <map>
@@ -148,6 +149,50 @@ class Tree {
     }
     shrinkage_ *= rate;
   }
+
+  inline void proportional_prune(int iter, float base) {
+      float threshold;
+//      if(iter <= 20) threshold = 1;
+//      else
+        threshold = (float)std::pow(base, iter);
+//        threshold = 1;
+//    float threshold = 0.1;
+    for (int i = 0; i < num_leaves_; ++i) {
+//        std::cout<<leaf_value_[i]<<" ";
+
+        if(threshold < std::fabs(leaf_value_[i])){
+            leaf_value_[i] = leaf_value_[i] > 0 ? threshold : -threshold;
+        }
+
+//        std::cout<<leaf_value_[i]<<" ";
+    }
+  }
+
+  inline void add_noise(float scale, int seed){
+//      Laplace lap(scale, seed);
+      for(int i = 0; i < num_leaves_; i++) {
+        int seed = std::chrono::system_clock::now().time_since_epoch().count();
+          Laplace lap(scale, seed);
+        std::cout<<leaf_value_[i]<<" ";
+        float noise = lap.return_a_random_variable();
+        leaf_value_[i] += noise;
+        std::cout<<leaf_value_[i]<<" ";
+
+      }
+  }
+
+    inline void add_noise(Laplace& lap, float scale){
+//      Laplace lap(scale, seed);
+        for(int i = 0; i < num_leaves_; i++) {
+//            int seed = std::chrono::system_clock::now().time_since_epoch().count();
+//            Laplace lap(scale, seed);
+            std::cout<<leaf_value_[i]<<" ";
+            float noise = lap.return_a_random_variable(scale);
+            leaf_value_[i] += noise;
+            std::cout<<leaf_value_[i]<<" ";
+
+        }
+    }
 
   inline double shrinkage() const {
     return shrinkage_;
@@ -351,6 +396,11 @@ class Tree {
 
   /*! determine what the total permuation weight would be if we unwound a previous extension in the decision path*/
   static double UnwoundPathSum(const PathElement *unique_path, int unique_depth, int path_index);
+
+
+
+
+
 
   /*! \brief Number of max leaves*/
   int max_leaves_;

@@ -30,7 +30,10 @@ num_iteration_for_pred_(0),
 shrinkage_rate_(0.1f),
 num_init_iteration_(0),
 need_re_bagging_(false),
-balanced_bagging_(false) {
+balanced_bagging_(false),
+//lap(std::chrono::system_clock::now().time_since_epoch().count())
+lap(42)
+{
   #pragma omp parallel
   #pragma omp master
   {
@@ -277,6 +280,7 @@ void GBDT::Bagging(int iter) {
 void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
   bool is_finished = false;
   auto start_time = std::chrono::steady_clock::now();
+
   for (int iter = 0; iter < config_->num_iterations && !is_finished; ++iter) {
     is_finished = TrainOneIter(nullptr, nullptr);
     if (!is_finished) {
@@ -377,7 +381,8 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   }
   // bagging logic
   Bagging(iter_);
-
+  std::cout<<"in gbdt max absolute gradient:"<<*std::max_element(gradients_.begin(),gradients_.end(),abs_compare)<<std::endl;
+  std::cout<<"in gbdt max absolute hessian:"<<*std::max_element(hessians_.begin(),hessians_.end(),abs_compare)<<std::endl;
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     const size_t bias = static_cast<size_t>(cur_tree_id) * num_data_;
@@ -391,6 +396,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
           gradients_[bias + i] = grad[bag_data_indices_[i]];
           hessians_[bias + i] = hess[bag_data_indices_[i]];
         }
+
         grad = gradients_.data() + bias;
         hess = hessians_.data() + bias;
       }
@@ -403,8 +409,49 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto residual_getter = [score_ptr](const label_t* label, int i) {return static_cast<double>(label[i]) - score_ptr[i]; };
       tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
                                      num_data_, bag_data_indices_.data(), bag_data_cnt_);
+
+
+
+      float total_budget = 10.0;
+      float g_m = 1;
+
+
+      int total_iter = 100;
+        float base = 0.9;
+
+      int change_round = (int)(log((g_m/ (1+0.1)) / 2) / log(base));
+        std::cout<<"in proportional prune"<<std::endl;
+        new_tree->proportional_prune(iter_, base);
+//
+      float sum = (float)(change_round * std::pow(g_m, 2.0/3.0) + std::pow(2*std::pow(base,change_round),2.0/3.0) * (1-std::pow(base,2.0*(total_iter-change_round))) / (1-std::pow(base, 2.0/3.0)));
+      float sensitivity;
+      if(iter_ + 1 < change_round)
+          sensitivity = (float) (g_m / (1 + 0.1));
+      else
+          sensitivity = (float) (2.0 * std::pow(base, iter_));
+
+//      float sensitivity = 2;
+
+      float laplace_scale = (float) (std::pow(sensitivity, 1.0/3.0) * sum / total_budget);
+
+//        float laplace_scale = sensitivity / (total_budget / total_iter);
+//      float laplace_scale = (float) (2.0 * std::pow(base, iter_) / (10 * std::pow(base, iter_)));
+//        float laplace_scale = std::pow(base, iter_) / 0.1;
+//      float laplace_scale = 1.0 / 0.1;
+//        std::cout<<((1-std::pow(base, 1.0/9))*10*std::pow(base, iter_/9.0))<<std::endl;
+//        float laplace_scale = (float) std::pow(base, iter_) / ((1-std::pow(base, 1.0/9))*10.0*std::pow(base, iter_/9.0)/(1.0-std::pow(base,100/9.0)));
+//        float laplace_scale = (float) std::pow(base, iter_) / ((1-std::pow(base, 1.0/9))*10.0*std::pow(base, iter_/9.0));
+        std::cout<<"laplace_scale:"<<laplace_scale<<std::endl;
+//      int seed = 123;
+//      int seed = 1000000000;
+//        int seed = -1978358367;
+        int seed = std::chrono::system_clock::now().time_since_epoch().count();
+//        std::cout<<"seed:"<<seed<<std::endl;
+//      new_tree->add_noise(laplace_scale, seed);
+        new_tree->add_noise(lap, laplace_scale);
       // shrinkage by learning rate
       new_tree->Shrinkage(shrinkage_rate_);
+
       // update score
       UpdateScore(new_tree.get(), cur_tree_id);
       if (std::fabs(init_scores[cur_tree_id]) > kEpsilon) {
