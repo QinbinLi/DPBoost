@@ -42,6 +42,14 @@ class SerialTreeLearner: public TreeLearner {
 
   ~SerialTreeLearner();
 
+  //first dimension: leave, second dimension: features, third dimension: gain
+  std::vector<std::vector<std::vector<double>>> gains_of_features_of_leaves;
+  std::vector<double> gains_of_features_of_bestleave;
+  std::vector<std::vector<std::vector<SplitInfo>>> splitinfos_of_features_of_leaves;
+  int global_iter = 0;
+
+  std::default_random_engine randomseed;
+
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
   void ResetTrainingData(const Dataset* train_data) override;

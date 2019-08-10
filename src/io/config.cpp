@@ -168,6 +168,13 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetDeviceType(params, &device_type);
   GetTreeLearnerType(params, &tree_learner);
 
+  Config::GetDouble(params, "total_budget", &total_budget);
+
+
+
+  std::cout<<"in config set"<<std::endl;
+
+
   GetMembersFromString(params);
   
   // sort eval_at

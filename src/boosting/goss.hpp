@@ -114,8 +114,20 @@ class GOSS: public GBDT {
 
 
 //    score_t threshold = tmp_gradients[top_k - 1];
+//    bool constant_pruning = true;
+
     score_t threshold = 1;
-//    threshold = std::pow(0.95,iter);
+    if(config_->objective == std::string("regression")){
+      threshold = 1;
+    }
+    else if (config_->objective == std::string("binary")){
+      threshold = 0.5;
+    }
+//    if(constant_pruning)
+//      threshold = 1;
+//    else
+//      threshold = std::pow(0.95,iter);
+
     std::cout<<"argmax gradients 0:"<<tmp_gradients[0]<<std::endl;
 //    for(int i = 0; i < top_k; i++)
 //        std::cout<<tmp_gradients[i]<<" ";

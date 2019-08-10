@@ -43,6 +43,11 @@ class FeatureHistogram {
   ~FeatureHistogram() {
   }
 
+
+  /*! store the gains of each feature value of a feature */
+//  std::vector<double> gains_of_a_feature;
+
+  std::vector<SplitInfo> splitinfos_of_a_feature;
   /*! \brief Disable copy */
   FeatureHistogram& operator=(const FeatureHistogram&) = delete;
   /*! \brief Disable copy */
@@ -80,16 +85,28 @@ class FeatureHistogram {
     }
   }
 
+  //find best threshold for each feature
   void FindBestThreshold(double sum_gradient, double sum_hessian, data_size_t num_data, double min_constraint, double max_constraint,
                          SplitInfo* output) {
     output->default_left = true;
     output->gain = kMinScore;
+//    gains_of_a_feature.clear();
+    splitinfos_of_a_feature.clear();
+//    gains_of_a_feature.resize(meta_->num_bin, 0);
+    splitinfos_of_a_feature.resize(meta_->num_bin);
+    for(int i = 0; i < (int) splitinfos_of_a_feature.size(); i++){
+        splitinfos_of_a_feature[i].default_left = true;
+        splitinfos_of_a_feature[i].gain = kMinScore;
+//        gains_of_a_feature[i] = kMinScore;
+    }
+
     find_best_threshold_fun_(sum_gradient, sum_hessian + 2 * kEpsilon, num_data, min_constraint, max_constraint, output);
     output->gain *= meta_->penalty;
   }
 
   void FindBestThresholdNumerical(double sum_gradient, double sum_hessian, data_size_t num_data, double min_constraint, double max_constraint,
                                   SplitInfo* output) {
+//      std::cout<<"in find best threshold numerical"<<std::endl;
     is_splittable_ = false;
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
                                          meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step);
@@ -107,6 +124,9 @@ class FeatureHistogram {
       // fix the direction error when only have 2 bins
       if (meta_->missing_type == MissingType::NaN) {
         output->default_left = false;
+        for(int i = 0; i < (int) splitinfos_of_a_feature.size(); i++){
+          splitinfos_of_a_feature[i].default_left = false;
+        }
       }
     }
     output->gain -= min_gain_shift;
@@ -118,6 +138,7 @@ class FeatureHistogram {
   void FindBestThresholdCategorical(double sum_gradient, double sum_hessian, data_size_t num_data,
                                     double min_constraint, double max_constraint,
                                     SplitInfo* output) {
+//      std::cout<<"in find threshold categorical"<<std::endl;
     output->default_left = false;
     double best_gain = kMinScore;
     data_size_t best_left_count = 0;
@@ -292,6 +313,7 @@ class FeatureHistogram {
   void GatherInfoForThresholdNumerical(double sum_gradient, double sum_hessian,
                                        uint32_t threshold, data_size_t num_data,
                                        SplitInfo *output) {
+      std::cout<<"gather info for threshold numerical"<<std::endl;
     double gain_shift = GetLeafSplitGain(sum_gradient, sum_hessian,
                                          meta_->config->lambda_l1, meta_->config->lambda_l2,
                                          meta_->config->max_delta_step);
@@ -504,7 +526,7 @@ class FeatureHistogram {
     const double sg_l1 = ThresholdL1(sum_gradients, l1);
     return -(2.0 * sg_l1 * output + (sum_hessians + l2) * output * output);
   }
-
+  //find the threshold for a feature
   void FindBestThresholdSequence(double sum_gradient, double sum_hessian, data_size_t num_data, double min_constraint, double max_constraint,
                                  double min_gain_shift, SplitInfo* output, int dir, bool skip_default_bin, bool use_na_as_missing) {
     const int8_t bias = meta_->bias;
@@ -547,8 +569,41 @@ class FeatureHistogram {
         double current_gain = GetSplitGains(sum_left_gradient, sum_left_hessian, sum_right_gradient, sum_right_hessian,
                                             meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step,
                                             min_constraint, max_constraint, meta_->monotone_type);
+
+        splitinfos_of_a_feature[t-1+bias].threshold = static_cast<uint32_t>(t-1+bias);
+
+        splitinfos_of_a_feature[t-1+bias].left_output = CalculateSplittedLeafOutput(sum_left_gradient, sum_left_hessian,
+                                                                                   meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step,
+                                                                                   min_constraint, max_constraint);
+
+        splitinfos_of_a_feature[t-1+bias].left_count = left_count;
+        splitinfos_of_a_feature[t-1+bias].left_sum_gradient = sum_left_gradient;
+        splitinfos_of_a_feature[t-1+bias].left_sum_hessian = sum_left_hessian - kEpsilon;
+        splitinfos_of_a_feature[t-1+bias].right_output = CalculateSplittedLeafOutput(sum_gradient - sum_left_gradient,
+                                                                                    sum_hessian - sum_left_hessian,
+                                                                                    meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step,
+                                                                                    min_constraint, max_constraint);
+
+        splitinfos_of_a_feature[t-1+bias].right_count = num_data - left_count;
+        splitinfos_of_a_feature[t-1+bias].right_sum_gradient = sum_gradient - sum_left_gradient;
+        splitinfos_of_a_feature[t-1+bias].right_sum_hessian = sum_hessian - sum_left_hessian - kEpsilon;
+        splitinfos_of_a_feature[t-1+bias].gain = current_gain;
+        splitinfos_of_a_feature[t-1+bias].gain -= min_gain_shift;
+        splitinfos_of_a_feature[t-1+bias].gain *= meta_->penalty;
+        splitinfos_of_a_feature[t-1+bias].default_left = dir == -1;
+
+//        gains_of_a_feature[t - 1 + bias] = splitinfos_of_a_feature[t-1+bias].gain;
+
+//        if(std::isinf(splitinfos_of_a_feature[t-1+bias].gain)){
+//            std::cout<<"inf in t-1+bias gain"<<std::endl;
+//        }
+
         // gain with split is worse than without split
-        if (current_gain <= min_gain_shift) continue;
+        if (current_gain <= min_gain_shift) {
+//            gains_of_a_feature[t - 1 + bias] = 0;
+            splitinfos_of_a_feature[t-1+bias].gain = 0;
+            continue;
+        }
 
         // mark to is splittable
         is_splittable_ = true;
@@ -606,8 +661,42 @@ class FeatureHistogram {
         double current_gain = GetSplitGains(sum_left_gradient, sum_left_hessian, sum_right_gradient, sum_right_hessian,
                                             meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step,
                                             min_constraint, max_constraint, meta_->monotone_type);
+
+
+        splitinfos_of_a_feature[t + bias].threshold = static_cast<uint32_t>(t+bias);
+
+        splitinfos_of_a_feature[t+bias].left_output = CalculateSplittedLeafOutput(sum_left_gradient, sum_left_hessian,
+                                                                                    meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step,
+                                                                                    min_constraint, max_constraint);
+
+        splitinfos_of_a_feature[t+bias].left_count = left_count;
+        splitinfos_of_a_feature[t+bias].left_sum_gradient = sum_left_gradient;
+        splitinfos_of_a_feature[t+bias].left_sum_hessian = sum_left_hessian - kEpsilon;
+        splitinfos_of_a_feature[t+bias].right_output = CalculateSplittedLeafOutput(sum_gradient - sum_left_gradient,
+                                                                                     sum_hessian - sum_left_hessian,
+                                                                                     meta_->config->lambda_l1, meta_->config->lambda_l2, meta_->config->max_delta_step,
+                                                                                     min_constraint, max_constraint);
+
+        splitinfos_of_a_feature[t+bias].right_count = num_data - left_count;
+        splitinfos_of_a_feature[t+bias].right_sum_gradient = sum_gradient - sum_left_gradient;
+        splitinfos_of_a_feature[t+bias].right_sum_hessian = sum_hessian - sum_left_hessian - kEpsilon;
+        splitinfos_of_a_feature[t+bias].gain = current_gain;
+        splitinfos_of_a_feature[t+bias].gain -= min_gain_shift;
+        splitinfos_of_a_feature[t+bias].gain *= meta_->penalty;
+        splitinfos_of_a_feature[t+bias].default_left = dir == -1;
+
+//        gains_of_a_feature[t + bias] = splitinfos_of_a_feature[t+bias].gain;
+
+//          if(std::isinf(splitinfos_of_a_feature[t+bias].gain)){
+//              std::cout<<"inf in t+bias gain"<<std::endl;
+//          }
+
         // gain with split is worse than without split
-        if (current_gain <= min_gain_shift) continue;
+        if (current_gain <= min_gain_shift) {
+//            gains_of_a_feature[t + bias] = 0;
+            splitinfos_of_a_feature[t+bias].gain = 0;
+            continue;
+        }
 
         // mark to is splittable
         is_splittable_ = true;

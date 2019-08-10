@@ -18,7 +18,10 @@
 namespace LightGBM {
 
 
-GBDT::GBDT() : iter_(0),
+GBDT::GBDT() :
+lap(42),
+//lap(std::chrono::system_clock::now().time_since_epoch().count()),
+iter_(0),
 train_data_(nullptr),
 objective_function_(nullptr),
 early_stopping_round_(0),
@@ -30,9 +33,8 @@ num_iteration_for_pred_(0),
 shrinkage_rate_(0.1f),
 num_init_iteration_(0),
 need_re_bagging_(false),
-balanced_bagging_(false),
+balanced_bagging_(false)
 //lap(std::chrono::system_clock::now().time_since_epoch().count())
-lap(42)
 {
   #pragma omp parallel
   #pragma omp master
@@ -384,6 +386,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   std::cout<<"in gbdt max absolute gradient:"<<*std::max_element(gradients_.begin(),gradients_.end(),abs_compare)<<std::endl;
   std::cout<<"in gbdt max absolute hessian:"<<*std::max_element(hessians_.begin(),hessians_.end(),abs_compare)<<std::endl;
   bool should_continue = false;
+//  global_total_budget = 0;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     const size_t bias = static_cast<size_t>(cur_tree_id) * num_data_;
     std::unique_ptr<Tree> new_tree(new Tree(2));
@@ -412,27 +415,62 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
 
 
 
-      float total_budget = 10.0;
-      float g_m = 1;
+      double total_budget_all_nodes = config_->total_budget;
+      double total_budget = total_budget_all_nodes / 2;
+//        double total_budget = 100;
+      std::cout<<"total_budget:"<<total_budget<<std::endl;
+//      change g_m according to the loss function
+      if(total_budget != 0) {
+        float g_m = 1;
 
+        if (config_->objective == std::string("regression")) {
+          g_m = 1;
+        } else if (config_->objective == std::string("binary")) {
+          g_m = 0.5;
+        }
 
-      int total_iter = 100;
-        float base = 0.9;
+        int total_iter = config_->num_iterations;
+        double base = 0.9;
 
-      int change_round = (int)(log((g_m/ (1+0.1)) / 2) / log(base));
-        std::cout<<"in proportional prune"<<std::endl;
+        std::cout << "in proportional prune" << std::endl;
         new_tree->proportional_prune(iter_, base);
+        float lamda = 0.1;
+
+        int change_round = (int) (log((g_m / (1 + 0.1)) / 2) / log(base)) + 1;
+        double sum_first_part =
+                std::pow(base, 2.0 * (total_iter - 1) / 3) * (1 - std::pow(base, -2.0 / 3 * change_round)) /
+                (1 - std::pow(base, -2.0 / 3)) * std::pow(g_m / (1 + lamda), 2.0 / 3.0);
+        double sum_second_part =
+                (total_iter - change_round) * std::pow(base, 2.0 / 3 * (total_iter - 1)) * std::pow(2 * g_m, 2.0 / 3);
+        double sum = sum_first_part + sum_second_part;
+        double sensitivity;
+        if (iter_ + 1 <= change_round) {
+          sensitivity = g_m / 1 + lamda;
+        } else {
+          sensitivity = 2 * std::pow(base, iter_) * g_m;
+        }
+//      sensitivity = 1;
+//      double current_budget = total_budget * std::pow(std::pow(base, total_iter - iter_ - 1) * sensitivity, 2.0/3) / sum;
+//      double current_budget = total_budget / total_iter;
+        double current_budget = total_budget * (1 - base) * std::pow(base, iter_);
+        double laplace_scale = sensitivity / current_budget;
+
+        global_total_budget += current_budget;
+
+        std::cout << "global_total_budget:" << global_total_budget << std::endl;
+
+//      int change_round = (int)(log((g_m/ (1+0.1)) / 2) / log(base)) + 1;
+//      float sum = (float)(change_round * std::pow(g_m / (1 + lamda), 2.0/3.0) + std::pow(2*std::pow(base,change_round),2.0/3.0) * (1-std::pow(base,2.0*(total_iter-change_round))) / (1-std::pow(base, 2.0/3.0)));
+//      float sensitivity;
+//      if(iter_ + 1 < change_round)
+//          sensitivity = (float) (g_m / (1 + lamda));
+//      else
+//          sensitivity = (float) (2.0 * std::pow(base, iter_));
 //
-      float sum = (float)(change_round * std::pow(g_m, 2.0/3.0) + std::pow(2*std::pow(base,change_round),2.0/3.0) * (1-std::pow(base,2.0*(total_iter-change_round))) / (1-std::pow(base, 2.0/3.0)));
-      float sensitivity;
-      if(iter_ + 1 < change_round)
-          sensitivity = (float) (g_m / (1 + 0.1));
-      else
-          sensitivity = (float) (2.0 * std::pow(base, iter_));
-
-//      float sensitivity = 2;
-
-      float laplace_scale = (float) (std::pow(sensitivity, 1.0/3.0) * sum / total_budget);
+//      float laplace_scale = (float) (std::pow(sensitivity, 1.0/3.0) * sum / total_budget);
+//      float current_budget = sensitivity / laplace_scale;
+//      global_total_budget += current_budget;
+//        std::cout<<"global_total_budget:"<<global_total_budget<<std::endl;
 
 //        float laplace_scale = sensitivity / (total_budget / total_iter);
 //      float laplace_scale = (float) (2.0 * std::pow(base, iter_) / (10 * std::pow(base, iter_)));
@@ -441,14 +479,18 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
 //        std::cout<<((1-std::pow(base, 1.0/9))*10*std::pow(base, iter_/9.0))<<std::endl;
 //        float laplace_scale = (float) std::pow(base, iter_) / ((1-std::pow(base, 1.0/9))*10.0*std::pow(base, iter_/9.0)/(1.0-std::pow(base,100/9.0)));
 //        float laplace_scale = (float) std::pow(base, iter_) / ((1-std::pow(base, 1.0/9))*10.0*std::pow(base, iter_/9.0));
-        std::cout<<"laplace_scale:"<<laplace_scale<<std::endl;
+        std::cout << "laplace_scale:" << laplace_scale << std::endl;
 //      int seed = 123;
 //      int seed = 1000000000;
 //        int seed = -1978358367;
-        int seed = std::chrono::system_clock::now().time_since_epoch().count();
+//        int seed = std::chrono::system_clock::now().time_since_epoch().count();
 //        std::cout<<"seed:"<<seed<<std::endl;
 //      new_tree->add_noise(laplace_scale, seed);
-        new_tree->add_noise(lap, laplace_scale);
+
+
+
+        new_tree->add_noise(lap, (float) laplace_scale);
+      }
       // shrinkage by learning rate
       new_tree->Shrinkage(shrinkage_rate_);
 

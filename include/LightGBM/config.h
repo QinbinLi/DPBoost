@@ -82,6 +82,11 @@ struct Config {
 
   #pragma region Core Parameters
 
+
+
+  double total_budget = 0;
+
+
   // [doc-only]
   // alias = config_file
   // desc = path of config file

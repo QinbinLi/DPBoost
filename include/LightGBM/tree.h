@@ -171,7 +171,7 @@ class Tree {
   inline void add_noise(float scale, int seed){
 //      Laplace lap(scale, seed);
       for(int i = 0; i < num_leaves_; i++) {
-        int seed = std::chrono::system_clock::now().time_since_epoch().count();
+//        int seed = std::chrono::system_clock::now().time_since_epoch().count();
           Laplace lap(scale, seed);
         std::cout<<leaf_value_[i]<<" ";
         float noise = lap.return_a_random_variable();
@@ -186,10 +186,10 @@ class Tree {
         for(int i = 0; i < num_leaves_; i++) {
 //            int seed = std::chrono::system_clock::now().time_since_epoch().count();
 //            Laplace lap(scale, seed);
-            std::cout<<leaf_value_[i]<<" ";
+//            std::cout<<leaf_value_[i]<<" ";
             float noise = lap.return_a_random_variable(scale);
             leaf_value_[i] += noise;
-            std::cout<<leaf_value_[i]<<" ";
+//            std::cout<<leaf_value_[i]<<" ";
 
         }
     }

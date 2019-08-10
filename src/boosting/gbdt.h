@@ -48,6 +48,7 @@ class GBDT : public GBDTBase {
   */
   ~GBDT();
   Laplace lap;
+  double global_total_budget = 0;
   /*!
   * \brief Initialization logic
   * \param gbdt_config Config for boosting

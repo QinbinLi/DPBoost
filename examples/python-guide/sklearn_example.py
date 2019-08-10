@@ -16,7 +16,7 @@ y_train = df_train[0]
 y_test = df_test[0]
 X_train = df_train.drop(0, axis=1)
 X_test = df_test.drop(0, axis=1)
-
+print(X_train)
 print('Starting training...')
 # train
 gbm = lgb.LGBMRegressor(num_leaves=31,
