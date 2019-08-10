@@ -154,8 +154,8 @@ class Tree {
       float threshold;
 //      if(iter <= 20) threshold = 1;
 //      else
-        threshold = (float)std::pow(base, iter);
-//        threshold = 1;
+//        threshold = (float)std::pow(base, iter);
+        threshold = 1;
 //    float threshold = 0.1;
     for (int i = 0; i < num_leaves_; ++i) {
 //        std::cout<<leaf_value_[i]<<" ";

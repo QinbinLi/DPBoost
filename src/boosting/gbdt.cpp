@@ -470,7 +470,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         double base = 0.9;
 
         std::cout << "in proportional prune" << std::endl;
-//        new_tree->proportional_prune(iter_, base);
+        new_tree->proportional_prune(iter_, base);
 
         float lamda = 0.1;
 
