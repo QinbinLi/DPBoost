@@ -170,6 +170,7 @@ data_size_t GBDT::BaggingHelper(Random& cur_rand, data_size_t start, data_size_t
 
   std::cout<<"cnt:"<<cnt<<std::endl;
   data_size_t bag_data_cnt = static_cast<data_size_t>(std::pow(0.5, iter_ + 1) * cnt);
+  std::cout<<"bag data cnt:"<<bag_data_cnt<<std::endl;
   if(bag_data_cnt < 1){
     std::cout<<"no bagging anymore"<<std::endl;
     exit(0);
@@ -490,7 +491,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
 //      double current_budget = total_budget * std::pow(std::pow(base, total_iter - iter_ - 1) * sensitivity, 2.0/3) / sum;
 //      double current_budget = total_budget / total_iter;
 //        double current_budget = total_budget * (1 - base) * std::pow(base, iter_);
-        double current_budget = total_budget * 2;
+        double current_budget = total_budget;
         sensitivity = 2;
         double laplace_scale = sensitivity / current_budget;
 
