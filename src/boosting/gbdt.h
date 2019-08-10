@@ -513,6 +513,9 @@ class GBDT : public GBDTBase {
   std::string loaded_parameter_;
 
   Json forced_splits_json_;
+
+  //whether the instance has already been chosen in the bagging for the infocom paper.
+  std::vector<data_size_t> already_chosen;
 };
 
 }  // namespace LightGBM
