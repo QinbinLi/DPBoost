@@ -22,7 +22,9 @@ In function ```try_DPBoost_2level``` of run_exp.py:
 *inner_boost_round_list*: The list of number of trees in an ensemble you want to try.
 
 ## Note
-Currently the code only supports setting ```objective``` as ```regression``` (use square loss function). 
+1. Since we directly implement the code based on LightGBM, it may overwrite the vanilla LightGBM of your python library.
+
+2. Currently the code only supports setting ```objective``` as ```regression``` (use square loss function). 
 For the binary classification task, we convert it to the regression task (e.g., for class in [-1,1], the output class is 0 if the prediction score is bigger than 0).
 
 ## Contact
