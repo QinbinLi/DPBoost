@@ -322,106 +322,6 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       }
       budget_for_current_node = budget_for_this_tree / 2 / config_->max_depth;
 
-//    double sum_gain = 0;
-
-//      std::cout << "best leaf:" << best_leaf << std::endl;
-//      std::cout << "best leaf depth:" << best_leaf_depth << std::endl;
-//    double budget_for_current_node = budget_for_this_tree /2 / std::pow(2.0, best_leaf_depth + 1);
-
-//      if (config_->budget_allocation_inside_tree == std::string("equal")) {
-//        budget_for_current_node = budget_for_this_tree / 2 / config_->max_depth;
-//      } else if (config_->budget_allocation_inside_tree == std::string("up_higher")) {
-//        budget_for_current_node = budget_for_this_tree / 2 / std::pow(2.0, best_leaf_depth + 1);
-//      }
-
-//      double multiplier = budget_for_current_node / (2 * sensitivity_u);
-//    std::cout<<"budget_for_current_node:"<<budget_for_current_node<<std::endl;
-//    std::cout<<"before accu gain"<<std::endl;
-//    std::cout<<"gains:"<<std::endl;
-
-
-
-//    int n_bins = (int)splitinfos_of_features_of_leaves[best_leaf][0].size();
-//    CHECK(n_bins == (int) splitinfos_of_features_of_leaves[best_leaf][1].size());
-//    std::cout<<"0 size:"<<splitinfos_of_features_of_leaves[best_leaf][0].size()<<std::endl;
-//    std::cout<<"1 size:"<<splitinfos_of_features_of_leaves[best_leaf][1].size()<<std::endl;
-
-
-/*
-    int n_gain = num_features_ * n_bins;
-    gains_of_features_of_bestleave.clear();
-    gains_of_features_of_bestleave.resize(n_gain);
-    std::cout<<"0"<<std::endl;
-#pragma omp parallel for
-    for(int i = 0; i < n_gain; i++){
-        if(splitinfos_of_features_of_leaves[best_leaf][i / n_bins][i%n_bins].gain == -INFINITY) {
-//            std::cout<<"-inf"<<std::endl;
-            gains_of_features_of_bestleave[i] = 0;
-        }
-        else
-          gains_of_features_of_bestleave[i] = multiplier * splitinfos_of_features_of_leaves[best_leaf][i / n_bins][i%n_bins].gain;
-    }
-
-std::cout<<"0.5"<<std::endl;
-//    std::vector<double> gain_diff();
-    double* gain_diff = new double [n_gain * n_gain]();
-    std::cout<<"gain_diff n_gain:"<<gain_diff[n_gain * n_gain - 1]<<std::endl;
-//    double gain_diff[n_gain][n_gain];
-  std::cout<<"1"<<std::endl;
-#pragma omp parallel for
-    for(int i = 0; i < n_gain; i++){
-        for(int j = i; j < n_gain; j++){
-            if(gains_of_features_of_bestleave[i] == -INFINITY || gains_of_features_of_bestleave[j] == -INFINITY)
-                std::cout<<"-inf in 1-2"<<std::endl;
-            if((gains_of_features_of_bestleave[i] != 0) && (gains_of_features_of_bestleave[j] != 0)){
-                gain_diff[i*n_gain + j] = std::exp(gains_of_features_of_bestleave[j]-gains_of_features_of_bestleave[i]);
-            }
-        }
-        for(int j = 0; j < i; j++){
-          if(gain_diff[j*n_gain+i] == INFINITY)
-            gain_diff[i*n_gain+j] = 0;
-          else if(gain_diff[j*n_gain + i] != 0)
-            gain_diff[i*n_gain + j] = 1.0 / gain_diff[j*n_gain + i];
-        }
-    }
-
-    double* probs = new double [n_gain]();
-    std::cout<<"probs0:"<<probs[n_gain - 1]<<std::endl;
-  std::cout<<"2"<<std::endl;
-#pragma omp parallel for
-  for(int i = 0; i < num_features_; i++){
-      for(int j = 0; j < n_bins; j++){
-          for(int k = 0; k < n_gain; k++){
-              if(gain_diff[(i * n_bins + j) * n_gain + k] == INFINITY) {
-                  probs[i * n_bins + j] = 0;
-                  break;
-              }
-              else
-                  probs[i * n_bins + j] += gain_diff[(i * n_bins + j) * n_gain + k];
-          }
-          if(probs[i*n_bins + j] != 0)
-            probs[i*n_bins+j] = 1.0 / probs[i*n_bins+j];
-      }
-
-  }
-  std::cout<<"probs:"<<std::endl;
-  for(int i = 0; i< n_gain; i++){
-    std::cout<<probs[i]<<" ";
-    if(probs[i] != 0){
-      probs[i] += last_non_zero;
-      last_non_zero = probs[i];
-    }
-  }
-
-*/
-
-//#pragma omp parallel for
-//    for(int i = 0; i < n_gain; i++){
-//        for(int j = 0; j < n_gain; j++) {
-//            probs[i / n_bins][i % n_bins] += gain_diff[i*n_gain+j];
-//        }
-//    }
-
 
       std::vector<std::vector<double>> probs(num_features_);
 #pragma omp parallel for
@@ -503,46 +403,7 @@ std::cout<<"0.5"<<std::endl;
           }
         }
       }
-//      std::cout << "sum:" << std::endl;
 
-//#pragma omp parallel for
-//      for (int i = 0; i < num_features_; i++) {
-//        for (int j = 0; j < (int) gains_of_features_of_leaves[best_leaf][i].size(); j++) {
-//          if (gains_of_features_of_leaves[best_leaf][i][j] != 0) {
-//            double sum = 0;
-//            bool is_continue = true;
-//            for (int m = 0; m < num_features_ && is_continue; m++)
-//              for (int n = 0; n < (int) gains_of_features_of_leaves[best_leaf][m].size(); n++) {
-//                if (gains_of_features_of_leaves[best_leaf][m][n] != 0) {
-////                          if((gains_of_features_of_leaves[best_leaf][m][n] - gains_of_features_of_leaves[best_leaf][i][j]) == -NaN)
-////                            std::cout<<"-nan_gain_diff"<<std::endl;
-//                  sum += std::exp(
-//                          gains_of_features_of_leaves[best_leaf][m][n] - gains_of_features_of_leaves[best_leaf][i][j]);
-//                  if (sum == INFINITY) {
-//                    probs[i][j] = 0;
-//                    is_continue = false;
-//                  }
-////                            else if (std::isnan(sum)){
-////                                std::cout<<"gain_diff:"<< gains_of_features_of_leaves[best_leaf][m][n] - gains_of_features_of_leaves[best_leaf][i][j]<<std::endl;
-////                                std::cout<<"gain m n:"<<gains_of_features_of_leaves[best_leaf][m][n]<<" ";
-////                                std::cout<<"gain i j:"<<gains_of_features_of_leaves[best_leaf][i][j]<<std::endl;
-////                            }
-//                }
-//              }
-////                std::cout<<sum<<" "<<std::endl;
-//            if (is_continue && sum != 0) {
-//              probs[i][j] = 1.0 / sum;
-////                    if(std::isnan(probs[i][j])){
-////                        std::cout<<"-nan sum:"<<sum<<std::endl;
-////                    }
-//            }
-//          }
-//        }
-//      }
-
-
-//      std::cout << std::endl;
-//      std::cout << "probs:" << std::endl;
 
       double last_non_zero = 0;
       //cannot use openmp
@@ -581,62 +442,11 @@ std::cout<<"0.5"<<std::endl;
         }
       }
 
-
-//    for(int i = 0; i < n_gain; i++){
-//      if(probs[i] > gene_rand) {
-//        select_feature = i / n_bins;
-//        select_bin = i % n_bins;
-//        break;
-//      }
-//    }
-
-
-//    for(int i = 0; i < num_features_; i++) {
-//      for(int j = 0; j < (int) gains_of_features_of_leaves[best_leaf][i].size(); j++) {
-//        std::cout<<gains_of_features_of_leaves[best_leaf][i][j]<<" ";
-//        if(gains_of_features_of_leaves[best_leaf][i][j] != 0) {
-//          gains_of_features_of_leaves[best_leaf][i][j] = std::exp(
-//                  budget_for_current_node * gains_of_features_of_leaves[best_leaf][i][j] / (2 * sensitivity_u));
-////          sum_gain += gains_of_features_of_leaves[best_leaf][i][j];
-//          gains_of_features_of_leaves[best_leaf][i][j] += last_non_zero;
-//          last_non_zero = gains_of_features_of_leaves[best_leaf][i][j];
-//
-//        }
-//      }
-//    }
-
-//    std::cout<<std::endl;
-//    std::cout<<"after accu gain"<<std::endl;
-//    sum_gain = gains_of_features_of_leaves[best_leaf][num_features_-1].back();
-//    std::cout<<"sum gain:"<<sum_gain<<std::endl;
-//    std::uniform_real_distribution<double> gain_rand(0,sum_gain);
-//    double gene_rand = gain_rand(randomseed);
-//    std::cout<<"gene_rand:"<<gene_rand<<std::endl;
-//    int select_feature = -1;
-//    int select_bin = -1;
-//    bool flag= true;
-//    for(int i = 0; (i < num_features_) && flag; i++){
-//      for(int j = 0; j < (int) gains_of_features_of_leaves[best_leaf][i].size(); j++){
-//        if(gains_of_features_of_leaves[best_leaf][i][j] > gene_rand){
-//          select_feature = i;
-//          select_bin = j;
-//          flag = false;
-//          break;
-//        }
-//      }
-//    }
-
-
-//      std::cout << "after get random select bin" << std::endl;
-//      std::cout << "select_feature:" << select_feature << std::endl;
-//      std::cout << "select_bin:" << select_bin << std::endl;
       best_split_per_leaf_[best_leaf] = splitinfos_of_features_of_leaves[best_leaf][select_feature][select_bin];
 
 
     }
 
-//    gains_of_features_of_leaves.resize(0);
-//    best_split_per_leaf_[best_leaf]
 
 
 
