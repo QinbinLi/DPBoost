@@ -28,6 +28,7 @@ def experiment(dataset, total_budget, n_trees, boost_method = 'DPBoost_2level', 
         'inner_boost_round': inner_boost_round,
         'balance_partition': balance_partition,
         'geo_clip': 1,
+        'verbose': -1,
     }
     data = lgb.Dataset(x,y_new.reshape(-1))
     results = lgb.cv(params, data, num_boost_round = n_trees, nfold = 5, stratified= False)
@@ -55,11 +56,11 @@ def try_DPBoost_2level(output_path="output.txt", n_trees_list = [50], total_budg
             output.write(dataset + "\n")
             for n_trees in n_trees_list:
                 for total_budget in total_budgets_list:
-                    print("n_trees=" + str(n_trees) + "\n")
+                    print("n_trees=" + str(n_trees))
                     output.write("n_trees="+str(n_trees) + "\n")
                     output.write("total_budget="+str(total_budget)+"\n")
                     for inner_boost_round in inner_boost_round_list:
-                        print("inner_boost_round="+str(inner_boost_round)+"\n")
+                        print("inner_boost_round="+str(inner_boost_round))
                         output.write("inner_boost_round="+str(inner_boost_round)+"\n")
                         for balance_partition in [0]:
                             start = time.time()
