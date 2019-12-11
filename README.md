@@ -1,4 +1,4 @@
-This is the code of paper [Privacy-Preserving Gradient Boosting Decision Trees](https://arxiv.org/pdf/1911.04209.pdf). The implementation is based on [LightGBM](https://github.com/microsoft/LightGBM).
+This is the code of paper [Privacy-Preserving Gradient Boosting Decision Trees](https://arxiv.org/pdf/1911.04209.pdf), a joint work with [Zhaomin Wu](https://github.com/JerryLife), [Zeyi Wen](https://zeyiwen.github.io/), and [Bingsheng He](https://www.comp.nus.edu.sg/~hebs/). The implementation is based on [LightGBM](https://github.com/microsoft/LightGBM).
 
 
 ## Script
