@@ -15,11 +15,11 @@ In function ```try_DPBoost_2level``` of run_exp.py:
 
 *output_path*: The output file path.
  
-*n_trees_list*: The list of total number of trees you want to try.
+*n_trees*: Number of trees.
 
-*total_budgets_list*: The list of budget you want to try.
+*total_budgets*: The privacy budget
 
-*inner_boost_round_list*: The list of number of trees in an ensemble you want to try.
+*inner_boost_round*: Number of trees inside an ensemble.
 
 ## Note
 1. Since we directly implement the code based on LightGBM, it may overwrite the vanilla LightGBM of your python library.
