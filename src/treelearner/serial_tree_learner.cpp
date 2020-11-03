@@ -281,8 +281,8 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       }
 
 //      int best_leaf_depth = tree->leaf_depth(best_leaf);
-      double sensitivity_u = (3 * lambda + 2) * g_m * g_m / ((2 + lambda) * (1 + lambda));
-      
+      //double sensitivity_u = (3 * lambda + 2) * g_m * g_m / ((2 + lambda) * (1 + lambda));
+      double sensitivity_u = 3 * g_m * g_m;
 
       double budget_for_this_tree = 0;
       double budget_for_current_node;
@@ -290,21 +290,21 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       if(config_->boost_method == std::string("DPBoost")) {
         budget_for_this_tree = total_budget * std::pow(sensitivity_this_tree, 2.0/3.0) / sum_leave_sensitivity;
 //        sensitivity_u = (3 * lambda + 2) * g_m * g_m / ((2 + lambda) * (1 + lambda));
-        sensitivity_u = 2 * g_m * g_m / (2 + lambda);
+        //sensitivity_u = 2 * g_m * g_m / (2 + lambda);
       }
       else if (config_->boost_method == std::string("infocom")) {
 //        sensitivity_u = 4;
-        sensitivity_u = 2 * g_m * g_m;
+        //sensitivity_u = 3 * g_m * g_m;
         budget_for_this_tree = total_budget;
       }
       else if(config_->boost_method == std::string("equal")){
         budget_for_this_tree = total_budget / total_iter;
 //        sensitivity_u = 2 * g_m * g_m;
-        sensitivity_u = (3 * lambda + 2) * g_m * g_m / ((2 + lambda) * (1 + lambda));
+        //sensitivity_u = (3 * lambda + 2) * g_m * g_m / ((2 + lambda) * (1 + lambda));
       }
       else if(config_->boost_method == std::string("DPBoost_bagging")){
         budget_for_this_tree = total_budget;
-        sensitivity_u = 2 * g_m * g_m / (2 + lambda);
+        //sensitivity_u = 2 * g_m * g_m / (2 + lambda);
       }
       else if(config_->boost_method == std::string("DPBoost_2level")){
 //        budget_for_this_tree = total_budget / config_->high_level_boost_round;
@@ -315,7 +315,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
           budget_for_this_tree = total_budget / (config_->num_iterations / config_->inner_boost_round + 1);
         }
 //        sensitivity_u = g_m * g_m / (1 + lambda);
-        sensitivity_u = (3 * lambda + 2) * g_m * g_m / ((2 + lambda) * (1 + lambda));
+        //sensitivity_u = (3 * lambda + 2) * g_m * g_m / ((2 + lambda) * (1 + lambda));
       }
       else{
         std::cout<<"wrong method!"<<std::endl;
