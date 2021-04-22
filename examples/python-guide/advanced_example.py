@@ -202,7 +202,7 @@ def reset_metrics():
 gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=10,
-                valid_sets=lgb_train,
+                valid_sets=lgb_eval,
                 callbacks=[reset_metrics()])
 
 print('Finished first 10 rounds with callback function...')
