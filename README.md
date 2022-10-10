@@ -24,8 +24,7 @@ In function ```try_DPBoost_2level``` of run_exp.py:
 ## Note
 1. Since we directly implement the code based on LightGBM, it may overwrite the vanilla LightGBM of your python library.
 
-2. Currently the code only supports setting ```objective``` as ```regression``` (use square loss function). 
-For the binary classification task, we convert it to the regression task (e.g., for class in [-1,1], the output class is 0 if the prediction score is bigger than 0).
+2. The master branch is for regression task. For the binary classification task, please use the code of binary-classification branch [here](https://github.com/QinbinLi/DPBoost/tree/binary-classification).
 
 ## Contact
 Please contact me by email liqinbin1998@gmail.com or create issues if you have any question.
