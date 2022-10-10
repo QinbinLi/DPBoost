@@ -11,8 +11,8 @@ def experiment(dataset, total_budget, n_trees, boost_method = 'DPBoost_2level', 
     bagging_freq = 1
     params = {
         'boosting_type': 'gbdt',
-        'objective': 'regression',
-        'metric': 'rmse',
+        'objective': 'binary',
+        'metric': 'binary_error',
         'num_leaves': 31,
         'max_depth': 6,
         'learning_rate': 0.1,
@@ -22,6 +22,7 @@ def experiment(dataset, total_budget, n_trees, boost_method = 'DPBoost_2level', 
         'bagging_freq': bagging_freq,
         'bagging_fraction':0.5,
         'max_bin': 255,
+        'boost_from_average': False,
         'total_budget': total_budget,
         'boost_method': boost_method,
         'high_level_boost_round': 1,
@@ -32,21 +33,17 @@ def experiment(dataset, total_budget, n_trees, boost_method = 'DPBoost_2level', 
     }
     data = lgb.Dataset(x,y_new.reshape(-1))
     results = lgb.cv(params, data, num_boost_round = n_trees, nfold = 5, stratified= False)
-    multiplier = (scaler.data_max_ - scaler.data_min_) / 2
-    results["rmse-mean"] = results["rmse-mean"] * multiplier
-    results["rmse-stdv"] = results["rmse-stdv"] * multiplier
-    scale_mean = results["rmse-mean"][n_trees - 1]
-    scale_stdv = results["rmse-stdv"][n_trees - 1]
-    print("rmse mean:", scale_mean)
-    print("rmse std:", scale_stdv)
+    print("error mean:", results["binary_error-mean"][n_trees - 1])
+    print("error std:", results["binary_error-stdv"][n_trees - 1])
 
-    return scale_mean, scale_stdv
+    return results["binary_error-mean"], results["binary_error-stdv"]
+
 
 dataset_root_path = "./"
 
 
 datasets = {
-    "abalone"
+    "a9a"
 }
 
 def try_DPBoost_2level(output_path="output.txt", n_trees_list = [50], total_budgets_list = [1,2,4,6,8,10], inner_boost_round_list = [50]):

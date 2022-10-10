@@ -115,6 +115,11 @@ class BinaryLogloss: public ObjectiveFunction {
         const double abs_response = fabs(response);
         gradients[i] = static_cast<score_t>(response * label_weight);
         hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight);
+        if(gradients[i] > 1.0)
+            gradients[i] = static_cast<score_t>(1.0);
+        else if(gradients[i] < -1.0)
+            gradients[i] = static_cast<score_t>(-1.0);
+        //hessians[i] = static_cast<score_t>(0.5);
       }
     } else {
       #pragma omp parallel for schedule(static)
@@ -127,7 +132,12 @@ class BinaryLogloss: public ObjectiveFunction {
         const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
         gradients[i] = static_cast<score_t>(response * label_weight  * weights_[i]);
+        if(gradients[i] > 1.0)
+            gradients[i] = static_cast<score_t>(1.0);
+        else if(gradients[i] < -1.0)
+            gradients[i] = static_cast<score_t>(-1.0);
         hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight * weights_[i]);
+        //hessians[i] = static_cast<score_t>(0.5);
       }
     }
   }

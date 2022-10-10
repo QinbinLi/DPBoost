@@ -607,7 +607,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
           laplace_scale = sensitivity / current_budget;
         }
         else if(config_->boost_method == std::string("infocom")){
-          sensitivity = 2;
+          //sensitivity = 2;
           current_budget = total_budget / 2;
           laplace_scale = sensitivity / current_budget;
         }

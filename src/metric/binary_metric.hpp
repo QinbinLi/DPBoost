@@ -141,12 +141,12 @@ class BinaryErrorMetric: public BinaryMetric<BinaryErrorMetric> {
   explicit BinaryErrorMetric(const Config& config) :BinaryMetric<BinaryErrorMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double prob) {
-//    if (prob <= 0.5f) {
-//      return label > 0;
-//    } else {
-//      return label <= 0;
-//    }
-
+    if (prob <= 0.5f) {
+      return label > 0;
+    } else {
+      return label <= 0;
+    }
+    /*
   //for regression objective
     if(prob > 0){
       return label < 0;
@@ -154,6 +154,7 @@ class BinaryErrorMetric: public BinaryMetric<BinaryErrorMetric> {
     else{
       return label >=0;
     }
+    */
   }
 
   inline static const char* Name() {

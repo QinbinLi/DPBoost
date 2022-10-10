@@ -113,12 +113,21 @@ class RegressionL2loss: public ObjectiveFunction {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         gradients[i] = static_cast<score_t>(score[i] - label_[i]);
+        if(gradients[i] > 1.0f)
+            gradients[i] = 1.0f;
+        if(gradients[i] < -1.0f)
+            gradients[i] = -1.0f;
         hessians[i] = 1.0f;
       }
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         gradients[i] = static_cast<score_t>((score[i] - label_[i]) * weights_[i]);
+        if(gradients[i] > 1.0f)
+            gradients[i] = 1.0f;
+        if(gradients[i] < -1.0f)
+            gradients[i] = -1.0f;
+
         hessians[i] = static_cast<score_t>(weights_[i]);
       }
     }
