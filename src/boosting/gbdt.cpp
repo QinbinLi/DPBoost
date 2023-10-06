@@ -631,9 +631,6 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         else{
           std::cout<<"wrong method!"<<std::endl;
         }
-        global_total_budget += current_budget;
-
-//        std::cout << "global_total_budget:" << global_total_budget << std::endl;
         new_tree->add_noise(lap, (float) laplace_scale);
       }
       // shrinkage by learning rate
